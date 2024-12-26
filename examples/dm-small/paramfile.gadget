@@ -7,7 +7,7 @@ OutputDir = output
 OutputList = 0.15,0.2,0.25
 SplitGravityTimestepsOn = 1
 # CPU time -limit
-	
+ParticlesAlwaysSorted = 1
 TimeLimitCPU = 3600 #= 8 hours
 
 # Code options

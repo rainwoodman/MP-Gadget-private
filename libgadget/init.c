@@ -98,7 +98,7 @@ inttime_t init(int RestartSnapNum, const char * OutputDir, struct header_data * 
     /*Read the snapshot*/
     petaio_read_snapshot(RestartSnapNum, OutputDir, CP, header, PartManager, SlotsManager, MPI_COMM_WORLD);
 
-    domain_test_id_uniqueness(PartManager);
+    domain_test_id_uniqueness(PartManager, MPI_COMM_WORLD);
 
     check_omega(PartManager, CP, get_generations(), header->MassTable);
 
@@ -212,7 +212,7 @@ void check_omega(struct part_manager_type * PartManager, Cosmology * CP, int gen
             P[i].Mass = MassTable[P[i].Type] * ( 1. - (double)P[i].Generation/generations);
             badmass++;
         }
-        if(P[i].Type >= 0 && P[i].Type < 6)
+        if(P[i].Type < 6)
             omegas[P[i].Type] += P[i].Mass;
         mass += P[i].Mass;
     }

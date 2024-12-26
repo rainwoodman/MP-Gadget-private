@@ -401,10 +401,10 @@ blackhole_dfaccel(int * ActiveBlackHoles, size_t NumActiveBlackHoles, const doub
     if (blackhole_dynfric_params.BH_DynFrictionMethod == 0)
         return;
 
-    int i;
+    size_t i;
     #pragma omp parallel for
     for(i = 0; i < NumActiveBlackHoles; i++) {
-        int n = ActiveBlackHoles ? ActiveBlackHoles[i] : i;
+        size_t n = ActiveBlackHoles ? ActiveBlackHoles[i] : i;
         blackhole_compute_dfaccel(n, atime, GravInternal);
     }
 }

@@ -375,7 +375,7 @@ fof_distribute_particles(struct part_manager_type * halo_pman, struct slots_mana
             endrun(3, "Error in NpigLocal %ld != %ld!\n", NpigLocal, halo_pman->NumPart);
     }
     /* Do a domain exchange. No pre-computed list here. Maybe a different particle table.*/
-    if(domain_exchange(fof_sorted_layout, halo_pman, NULL, halo_pman, halo_sman, 10000, Comm)) {
+    if(domain_exchange(fof_sorted_layout, halo_pman, NULL, halo_pman, halo_sman, Comm)) {
         message(1930, "Failed to exchange and write particles for the FOF. This is non-fatal, continuing.\n");
         if(halo_pman != PartManager) {
             myfree(halo_sman->Base);

@@ -102,7 +102,7 @@ static struct run_params
          FOFFileBase[100];
 
     int SnapshotWithFOF; /*Flag that doing FOF for snapshot outputs is on*/
-
+    int ParticlesAlwaysSorted; /*Flag that particles should be Peano sorted after every domain exchange.*/
     uint64_t RandomSeed; /*Initial seed for the random number table*/
 
     int ExcursionSetReionOn; /*Flag for enabling the excursion set reionisation model*/
@@ -156,7 +156,7 @@ set_all_global_params(ParameterSet * ps)
         All.SlotsIncreaseFactor = param_get_double(ps, "SlotsIncreaseFactor");
 
         All.SnapshotWithFOF = param_get_int(ps, "SnapshotWithFOF");
-
+        All.ParticlesAlwaysSorted = param_get_int(ps, "ParticlesAlwaysSorted");
         All.RandomSeed = param_get_int(ps, "RandomSeed");
 
         All.BlackHoleOn = param_get_int(ps, "BlackHoleOn");
@@ -433,6 +433,9 @@ run(const int RestartSnapNum, const inttime_t ti_init, const struct header_data 
             if(needfull)
                 domain_decompose_full(ddecomp);
         }
+        if(All.ParticlesAlwaysSorted)
+            slots_gc_sorted(PartManager, SlotsManager);
+
         update_lastactive_drift(&times);
 
         ActiveParticles Act = init_empty_active_particles(PartManager);

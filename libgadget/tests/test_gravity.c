@@ -161,13 +161,15 @@ static int check_against_force_direct(double ErrTolForceAcc)
 
 static void do_force_test(int Nmesh, double Asmth, double ErrTolForceAcc, int direct)
 {
+    int ThisTask;
+    MPI_Comm_rank(MPI_COMM_WORLD, &ThisTask);
     /*Sort by peano key so this is more realistic*/
     int i;
     #pragma omp parallel for
     for(i=0; i<PartManager->NumPart; i++) {
         P[i].Type = 1;
         P[i].Mass = 1;
-        P[i].ID = i;
+        P[i].ID = i + (ThisTask<<20L);
         P[i].TimeBinHydro = 0;
         P[i].TimeBinGravity = 0;
         P[i].IsGarbage = 0;
@@ -221,17 +223,23 @@ static void do_force_test(int Nmesh, double Asmth, double ErrTolForceAcc, int di
 
 static void test_force_flat(void ** state) {
     /*Set up the particle data*/
-    int numpart = PartManager->NumPart;
-    int ncbrt = cbrt(numpart);
-    particle_alloc_memory(PartManager, 8, numpart);
+    int numpart = PartManager->NumPart, ThisTask, NTask;
+    int64_t tot_npart;
+    MPI_Allreduce(&PartManager->NumPart, &tot_npart, 1, MPI_INT64, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Comm_rank(MPI_COMM_WORLD, &ThisTask);
+    MPI_Comm_size(MPI_COMM_WORLD, &NTask);
+    int64_t startpart = ThisTask * tot_npart / NTask;
+    int ncbrt = cbrt(tot_npart);
+    message(1, "np: %ld sp: %ld tot %ld\n", PartManager->NumPart, startpart, tot_npart);
+    particle_alloc_memory(PartManager, 8, numpart*1.1);
     /* Create a regular grid of particles, 8x8x8, all of type 1,
      * in a box 8 kpc across.*/
     int i;
     #pragma omp parallel for
     for(i=0; i<numpart; i++) {
-        P[i].Pos[0] = (PartManager->BoxSize/ncbrt) * (i/ncbrt/ncbrt);
-        P[i].Pos[1] = (PartManager->BoxSize/ncbrt) * ((i/ncbrt) % ncbrt);
-        P[i].Pos[2] = (PartManager->BoxSize/ncbrt) * (i % ncbrt);
+        P[i].Pos[0] = (PartManager->BoxSize/ncbrt) * ((i + startpart)/ncbrt/ncbrt);
+        P[i].Pos[1] = (PartManager->BoxSize/ncbrt) * (((i+startpart)/ncbrt) % ncbrt);
+        P[i].Pos[2] = (PartManager->BoxSize/ncbrt) * ((i + startpart) % ncbrt);
     }
     PartManager->NumPart = numpart;
     do_force_test(48, 1.5, 0.002, 0);
@@ -250,8 +258,6 @@ static void test_force_flat(void ** state) {
     }
     MPI_Allreduce(MPI_IN_PLACE, &meanerr, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     MPI_Allreduce(MPI_IN_PLACE, &maxerr, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    int64_t tot_npart;
-    MPI_Allreduce(&PartManager->NumPart, &tot_npart, 1, MPI_INT64, MPI_SUM, MPI_COMM_WORLD);
     meanerr/= (tot_npart*3.);
 
     message(0, "Max force %g, mean grav force %g\n", maxerr, meanerr);
@@ -263,17 +269,25 @@ static void test_force_flat(void ** state) {
 
 static void test_force_close(void ** state) {
     /*Set up the particle data*/
+    int ThisTask, NTask;
+    int64_t tot_npart;
+    MPI_Allreduce(&PartManager->NumPart, &tot_npart, 1, MPI_INT64, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Comm_rank(MPI_COMM_WORLD, &ThisTask);
+    MPI_Comm_size(MPI_COMM_WORLD, &NTask);
+    int64_t startpart = ThisTask * tot_npart / NTask;
+    message(1, "np: %ld sp: %ld tot %ld\n", PartManager->NumPart, startpart, tot_npart);
+    int ncbrt = cbrt(tot_npart);
+
     int numpart = PartManager->NumPart;
-    int ncbrt = cbrt(numpart);
     double close = 5000;
-    particle_alloc_memory(PartManager, 8, numpart);
+    particle_alloc_memory(PartManager, 8, numpart*1.2);
     /* Create particles clustered in one place, all of type 1.*/
     int i;
     #pragma omp parallel for
     for(i=0; i<numpart; i++) {
-        P[i].Pos[0] = 4. + (i/ncbrt/ncbrt)/close;
-        P[i].Pos[1] = 4. + ((i/ncbrt) % ncbrt) /close;
-        P[i].Pos[2] = 4. + (i % ncbrt)/close;
+        P[i].Pos[0] = 4. + ((i+startpart)/ncbrt/ncbrt)/close;
+        P[i].Pos[1] = 4. + (((i+startpart)/ncbrt) % ncbrt) /close;
+        P[i].Pos[2] = 4. + ((i+startpart) % ncbrt)/close;
     }
     PartManager->NumPart = numpart;
     do_force_test(48, 1.5, 0.002, 1);
@@ -309,7 +323,7 @@ static void test_force_random(void ** state) {
     int numpart = PartManager->NumPart;
     struct forcetree_testdata * data = * (struct forcetree_testdata **) state;
     gsl_rng * r = data->r;
-    particle_alloc_memory(PartManager, 8, numpart);
+    particle_alloc_memory(PartManager, 8, numpart*1.1);
     int i;
     for(i=0; i<2; i++) {
         do_random_test(r, numpart);
@@ -319,10 +333,18 @@ static void test_force_random(void ** state) {
 
 static int setup_tree(void **state) {
     walltime_init(&CT);
+    int NTask, ThisTask;
+    MPI_Comm_size(MPI_COMM_WORLD, &NTask);
+    MPI_Comm_rank(MPI_COMM_WORLD, &ThisTask);
     /*Set up the important parts of the All structure.*/
     /*Particles should not be outside this*/
     PartManager->BoxSize = 8;
-    PartManager->NumPart = 16*16*16;
+    PartManager->NumPart = 16*16*16 / NTask;
+    if(ThisTask == NTask -1)
+        PartManager->NumPart += 16*16*16 % NTask;
+    int64_t tot_npart;
+    MPI_Allreduce(&PartManager->NumPart, &tot_npart, 1, MPI_INT64, MPI_SUM, MPI_COMM_WORLD);
+    assert_true(tot_npart == 16*16*16);
 
     struct DomainParams dp = {0};
     dp.DomainOverDecompositionFactor = 2;

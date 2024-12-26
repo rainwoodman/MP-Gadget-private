@@ -166,7 +166,7 @@ void domain_decompose_full(DomainDecomp * ddecomp)
         domain_free(ddecomp);
 
 #ifdef DEBUG
-        domain_test_id_uniqueness(PartManager);
+        domain_test_id_uniqueness(PartManager, MPI_COMM_WORLD);
 #endif
         message(0, "Attempting new domain decomposition policy: Topleaves=%d GlobalSort=%d, SubSampleDistance=%d PreSort=%d\n", policies[i].NTopLeaves, domain_params.DomainUseGlobalSorting, policies[i].SubSampleDistance, policies[i].PreSort);
 
@@ -206,7 +206,7 @@ void domain_decompose_full(DomainDecomp * ddecomp)
         myfree(OldTopLeaves);
         myfree(OldTopNodes);
 
-        if(domain_exchange(domain_layoutfunc, ddecomp, NULL, PartManager, SlotsManager, 10000, ddecomp->DomainComm)) {
+        if(domain_exchange(domain_layoutfunc, ddecomp, NULL, PartManager, SlotsManager, ddecomp->DomainComm)) {
             message(0,"Could not exchange particles\n");
             if(i == Npolicies - 1)
                 endrun(5, "Ran out of policies!\n");
@@ -292,6 +292,8 @@ int domain_maintain(DomainDecomp * ddecomp, struct DriftData * drift)
         /* Garbage is not in the tree*/
         if(PartManager->Base[i].IsGarbage) {
             ngarbage++;
+            threx_local[nexthr_local] = i;
+            nexthr_local++;
             continue;
         }
         /* If we aren't using DM for the dynamic friction, we don't need to build a tree with inactive DM particles.
@@ -323,7 +325,7 @@ int domain_maintain(DomainDecomp * ddecomp, struct DriftData * drift)
     walltime_measure("/Domain/drift");
 
     /* Try a domain exchange. Note ExchangeList is freed inside.*/
-    int errno = domain_exchange(domain_layoutfunc, ddecomp, ExchangeData, PartManager, SlotsManager, 10000, ddecomp->DomainComm);
+    int errno = domain_exchange(domain_layoutfunc, ddecomp, ExchangeData, PartManager, SlotsManager, ddecomp->DomainComm);
     return errno;
 }
 
