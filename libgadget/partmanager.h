@@ -34,6 +34,9 @@ struct particle_data
     };
     /* Cacheline is here: above data is needed for the treebuild*/
     MyFloat Vel[3];   /* particle velocity at its current time */
+#ifdef SIDM
+    MyFloat SIDMAccel[3]; /* DM Acceleration from self-interactions*/
+#endif
     MyFloat FullTreeGravAccel[3]; /* Short-range tree acceleration at the most recent timestep
                                  which included all particles (ie, PM steps). Does not include PM acceleration.
                                  At time of writing this
