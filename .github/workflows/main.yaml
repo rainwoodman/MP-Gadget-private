@@ -42,19 +42,10 @@ jobs:
           ~/depends/src
           ~/depends/lib
 
-    - name: Setup Conda Environment
-      uses: conda-incubator/setup-miniconda@v3
-      with:
-        miniconda-version: latest
-        activate-environment: test
-        environment-file: maintainer/conda-env.yaml
-        channels: bccp
-        show-channel-urls: true
-        use-only-tar-bz2: true
-
-    - run:
-        conda info
-
+    - name: Install apt packages
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential libopenmpi-dev openmpi-bin libgsl-dev python3-configobj python3-numpy python3-h5py python3-scipy cython3
     - name: Build
       run: |
         cp platform-options/Options.mk.travis Options.mk
@@ -63,14 +54,15 @@ jobs:
     - name: Unit tests
       run: |
         make test
-
+    - name: Install python packages for make_class_power
+      run: |
+        sudo pip install classy bigfile
     - name: examples/travis
       run: |
         cd examples/travis
         python3 ../../tools/make_class_power.py paramfile.genic --extraz 82.3333 65.6667
         mpirun -np 2 ../../genic/MP-GenIC paramfile.genic
         mpirun -np 2 ../../gadget/MP-Gadget paramfile.gadget 1 # this starts from the IC
-        python check-results.py
         mpirun -np 2 ../../gadget/MP-Gadget paramfile.gadget 99 #Checks the gravity force error
         mpirun -np 2 ../../gadget/MP-Gadget paramfile.gadget 99 2
         python ../../tools/convert_bigfile_gadget_hdf5.py --input output/PART_000 --output output
@@ -88,3 +80,18 @@ jobs:
         mpirun -np 2 ../../genic/MP-GenIC paramfile.genic
         mpirun -np 2 ../../gadget/MP-Gadget paramfile.gadget
         python check_results.py
+    - name: Setup nbodykit
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        miniconda-version: latest
+        activate-environment: test
+        environment-file: maintainer/conda-env.yaml
+        channels: bccp
+        show-channel-urls: true
+        use-only-tar-bz2: true
+    - run: |
+        conda info
+    - name : Check travis results
+      run: |
+        cd examples/travis
+        python check-results.py      #This script alone needs nbodykit.

@@ -5,7 +5,7 @@ Ngrid = 128
 
 BoxSize = 150000.   # Periodic box size of simulation
 
-Omega0 = 0.2888      # Total matter density  (at z=0)
+Omega0 = 0.288      # Total matter density  (at z=0)
 OmegaLambda = 0.712      # Cosmological constant (at z=0)
 OmegaBaryon = 0.00     # Baryon density        (at z=0)
 ProduceGas = 0         # 0 is dm only. 1 is gas

@@ -5,12 +5,5 @@ channels:
 
 dependencies:
   - python
-  - mpi4py
   - nbodykit
   - matplotlib
-  - numpy
-  - configobj
-  # Below are for building MP-Gadget
-  - mpich
-  - gcc_linux-64=9.3.0   # Pin to latest version compatible with mpich 3.3.2: https://github.com/AnacondaRecipes/mpich-feedstock/issues/5
-  - gsl
