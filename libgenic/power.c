@@ -360,6 +360,9 @@ init_transfer_table(int ThisTask, double InitTime, const struct power_params * c
     for(i=0; i< transfer_table.Nentry; i++) {
         /* Now row 4 is t_cdm*/
         transfer_table.logD[VEL_CDM][i] /= fac;
+        transfer_table.logD[VEL_BAR][i] /= fac;
+        transfer_table.logD[VEL_NU][i] /= fac;
+        /* Now change to t bar and tnu*/
         transfer_table.logD[VEL_BAR][i] += transfer_table.logD[VEL_CDM][i];
         transfer_table.logD[VEL_NU][i] += transfer_table.logD[VEL_CDM][i];
 

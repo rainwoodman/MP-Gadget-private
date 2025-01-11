@@ -91,8 +91,8 @@ test_growth_numerical(void ** state)
         //Growth of CDM should be lower, growth of baryons should be higher.
         assert_true(dlogGrowth(newk,DELTA_CDM) < F_Omega(&CP, 0.01) * DeltaSpec(newk, DELTA_CDM));
         assert_true(fabs(dlogGrowth(newk,DELTA_CDM) / DeltaSpec(newk, DELTA_CDM) - 0.9389) < 0.01);
-        assert_true(dlogGrowth(newk,DELTA_BAR) > 1.318 * DeltaSpec(newk, DELTA_BAR));
-        assert_true(dlogGrowth(newk,DELTA_BAR) < 1.35 * DeltaSpec(newk, DELTA_BAR));
+        assert_true(dlogGrowth(newk,DELTA_BAR) > 1.25 * DeltaSpec(newk, DELTA_BAR));
+        assert_true(dlogGrowth(newk,DELTA_BAR) < 1.3 * DeltaSpec(newk, DELTA_BAR));
     }
     //Test super-horizon scales
     lowk = 1e-3;
